@@ -20,7 +20,7 @@ infoDb:
 secrets:
   todoDb:
     username: todo
-    password: "CHANGE-ME"
+    password: ""
   infoDb:
     username: info
-    password: "CHANGE-ME"
+    password: ""
