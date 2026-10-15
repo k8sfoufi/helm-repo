@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: info-api
+  labels: { app: info-api }
+spec:
+  replicas: {{ .Values.infoApi.replicas }}
+  selector:
+    matchLabels: { app: info-api }
+  template:
+    metadata:
+      labels: { app: info-api }
+      annotations:
+        linkerd.io/inject: enabled
+    spec:
+      containers:
+        - name: info-api
+          image: "{{ .Values.infoApi.image }}:{{ .Values.infoApi.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: info-db-secret, key: username } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: info-db-secret, key: password } }
+            - name: ConnectionStrings__Default
+              value: Host=info-db;Port=5432;Database=infodb;Username=$(DB_USER);Password=$(DB_PASSWORD)
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: info-api
+spec:
+  selector: { app: info-api }
+  ports:
+    - port: 8080
+      targetPort: http

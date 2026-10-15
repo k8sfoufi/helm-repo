@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-api
+  labels: { app: todo-api }
+spec:
+  replicas: {{ .Values.todoApi.replicas }}
+  selector:
+    matchLabels: { app: todo-api }
+  template:
+    metadata:
+      labels: { app: todo-api }
+      annotations:
+        linkerd.io/inject: enabled
+    spec:
+      containers:
+        - name: todo-api
+          image: "{{ .Values.todoApi.image }}:{{ .Values.todoApi.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: todo-db-secret, key: username } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: todo-db-secret, key: password } }
+            - name: ConnectionStrings__Default
+              value: Host=todo-db;Port=5432;Database=tododb;Username=$(DB_USER);Password=$(DB_PASSWORD)
+            - name: InfoApi__BaseUrl
+              value: http://info-api:8080
+            # Periodic job (comments on todos that are not done). With several replicas an
+            # advisory lock in Postgres guarantees only one pod executes each run.
+            - name: Job__Enabled
+              value: {{ .Values.todoApi.job.enabled | quote }}
+            - name: Job__IntervalMinutes
+              value: {{ .Values.todoApi.job.intervalMinutes | quote }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-api
+spec:
+  selector: { app: todo-api }
+  ports:
+    - port: 8080
+      targetPort: http

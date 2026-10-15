@@ -1,0 +1,26 @@
+todoApi:
+  image: abdelatifaiteur/todo-todo-api
+  tag: latest
+  replicas: 2
+  job:
+    enabled: true
+    intervalMinutes: 5
+
+infoApi:
+  image: abdelatifaiteur/todo-info-api
+  tag: latest
+  replicas: 2
+
+todoDb:
+  storage: 1Gi
+infoDb:
+  storage: 1Gi
+
+# Never put real passwords here. Pass them at install time (step 5).
+secrets:
+  todoDb:
+    username: todo
+    password: ""
+  infoDb:
+    username: info
+    password: ""
